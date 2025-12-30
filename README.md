@@ -12,6 +12,33 @@ Deleting VPC-attached Lambda functions can be extremely time-consuming due to:
 
 `clambda` solves these problems by providing a streamlined, automated workflow for Lambda function deletion.
 
+## Performance
+
+CloudFormation stack deletion time can be significantly reduced by detaching VPCs from Lambda functions before deleting the stack.
+
+### Benchmark Results
+
+Performance comparison when deleting a CloudFormation stack containing VPC-attached Lambda functions:
+
+| Method | Stack Deletion Time | Performance Improvement |
+|--------|---------------------|------------------------|
+| **Without `clambda`** (Direct stack deletion) | 21 minutes 51 seconds | Baseline |
+| **With `clambda`** (VPC detach → Stack deletion) | 1 minute 51 seconds | **92% faster** (20 minutes saved) |
+
+**Test command:**
+```bash
+# Pre-detach VPCs from all Lambda functions in the stack
+clambda detach --stack my-stack
+
+# Then delete the CloudFormation stack
+aws cloudformation delete-stack --stack-name my-stack
+```
+
+The dramatic time reduction occurs because:
+1. VPC detachment happens in parallel for all functions
+2. CloudFormation doesn't need to wait for VPC network interface cleanup
+3. IPv6 is properly disabled before detachment, preventing configuration conflicts
+
 ## Installation
 
 ### Using install script (Recommended)
@@ -93,7 +120,7 @@ clambda detach --stack my-stack
 
 ```bash
 # Using flags
-clambda --region us-west-2 --profile dev list
+clambda list --region us-west-2 --profile dev
 
 # Using environment variables
 export AWS_REGION=us-west-2

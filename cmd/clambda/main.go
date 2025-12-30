@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/shirasu/clambda/internal/application/usecase"
+	"github.com/shirasu/clambda/internal/domain/function"
 	"github.com/shirasu/clambda/internal/infrastructure/repository"
 	"github.com/shirasu/clambda/pkg/client"
 )
@@ -26,8 +27,8 @@ func main() {
 	switch command {
 	case "list":
 		handleList(region, profile)
-	case "detach-vpc":
-		handleDetachVPC(region, profile)
+	case "detach":
+		handleDetach(region, profile)
 	case "delete":
 		handleDelete(region, profile)
 	case "delete-logs":
@@ -45,6 +46,7 @@ func handleList(region, profile *string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
 	regionFlag := fs.String("region", *region, "AWS region")
 	profileFlag := fs.String("profile", *profile, "AWS profile")
+	stackFlag := fs.String("stack", "", "CloudFormation stack name")
 	fs.Parse(os.Args[2:])
 
 	ctx := context.Background()
@@ -54,13 +56,29 @@ func handleList(region, profile *string) {
 		os.Exit(1)
 	}
 
-	functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
-	listUseCase := usecase.NewListFunctionsUseCase(functionRepo)
+	var functions []*function.Function
 
-	functions, err := listUseCase.Execute(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to list functions: %v\n", err)
-		os.Exit(1)
+	if *stackFlag != "" {
+		// List functions in a specific stack
+		functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
+		stackRepo := repository.NewStackRepository(awsClient.CloudFormation)
+		listStackUseCase := usecase.NewListStackFunctionsUseCase(functionRepo, stackRepo)
+
+		functions, err = listStackUseCase.Execute(ctx, *stackFlag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to list functions in stack: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		// List all functions
+		functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
+		listUseCase := usecase.NewListFunctionsUseCase(functionRepo)
+
+		functions, err = listUseCase.Execute(ctx)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to list functions: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	if len(functions) == 0 {
@@ -81,21 +99,26 @@ func handleList(region, profile *string) {
 	}
 }
 
-func handleDetachVPC(region, profile *string) {
-	fs := flag.NewFlagSet("detach-vpc", flag.ExitOnError)
-	disableIPv6 := fs.Bool("disable-ipv6", true, "Disable IPv6 before detaching VPC")
+func handleDetach(region, profile *string) {
+	fs := flag.NewFlagSet("detach", flag.ExitOnError)
 	regionFlag := fs.String("region", *region, "AWS region")
 	profileFlag := fs.String("profile", *profile, "AWS profile")
+	lambdaFlag := fs.String("lambda", "", "Lambda function name")
+	stackFlag := fs.String("stack", "", "CloudFormation stack name")
 	fs.Parse(os.Args[2:])
 
-	args := fs.Args()
-	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Function name is required")
-		fmt.Fprintln(os.Stderr, "Usage: clambda detach-vpc [--disable-ipv6=true] <function-name>")
+	// Validate flags
+	if *lambdaFlag == "" && *stackFlag == "" {
+		fmt.Fprintln(os.Stderr, "Error: Either --lambda or --stack must be specified")
+		fmt.Fprintln(os.Stderr, "Usage: clambda detach --lambda <function-name>")
+		fmt.Fprintln(os.Stderr, "       clambda detach --stack <stack-name>")
 		os.Exit(1)
 	}
 
-	functionName := args[0]
+	if *lambdaFlag != "" && *stackFlag != "" {
+		fmt.Fprintln(os.Stderr, "Error: Cannot specify both --lambda and --stack")
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 	awsClient, err := client.NewAWSClient(ctx, *regionFlag, *profileFlag)
@@ -104,39 +127,63 @@ func handleDetachVPC(region, profile *string) {
 		os.Exit(1)
 	}
 
-	functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
-	detachVPCUseCase := usecase.NewDetachVPCUseCase(functionRepo)
+	if *lambdaFlag != "" {
+		// Detach VPC from a single function
+		functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
+		detachVPCUseCase := usecase.NewDetachVPCUseCase(functionRepo)
 
-	input := &usecase.DetachVPCInput{
-		FunctionName: functionName,
-		DisableIPv6:  *disableIPv6,
+		input := &usecase.DetachVPCInput{
+			FunctionName: *lambdaFlag,
+			DisableIPv6:  true,
+		}
+
+		if err := detachVPCUseCase.Execute(ctx, input); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to detach VPC: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully detached VPC from %s\n", *lambdaFlag)
+	} else {
+		// Detach VPC from all functions in a stack
+		functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
+		stackRepo := repository.NewStackRepository(awsClient.CloudFormation)
+		detachVPCStackUseCase := usecase.NewDetachVPCStackUseCase(functionRepo, stackRepo)
+
+		input := &usecase.DetachVPCStackInput{
+			StackName:   *stackFlag,
+			DisableIPv6: true,
+		}
+
+		if err := detachVPCStackUseCase.Execute(ctx, input); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to detach VPC from stack: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully detached VPC from all functions in stack %s\n", *stackFlag)
 	}
-
-	if err := detachVPCUseCase.Execute(ctx, input); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to detach VPC: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Successfully detached VPC from %s\n", functionName)
 }
 
 func handleDelete(region, profile *string) {
 	fs := flag.NewFlagSet("delete", flag.ExitOnError)
-	detachVPC := fs.Bool("detach-vpc", false, "Detach VPC before deleting")
-	disableIPv6 := fs.Bool("disable-ipv6", false, "Disable IPv6 before detaching VPC")
-	withLogs := fs.Bool("with-logs", false, "Delete associated CloudWatch logs")
 	regionFlag := fs.String("region", *region, "AWS region")
 	profileFlag := fs.String("profile", *profile, "AWS profile")
+	lambdaFlag := fs.String("lambda", "", "Lambda function name")
+	stackFlag := fs.String("stack", "", "CloudFormation stack name")
+	withoutLogs := fs.Bool("without-logs", false, "Don't delete CloudWatch logs (logs are deleted by default)")
 	fs.Parse(os.Args[2:])
 
-	args := fs.Args()
-	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Function name is required")
-		fmt.Fprintln(os.Stderr, "Usage: clambda delete [--detach-vpc] [--disable-ipv6] [--with-logs] <function-name>")
+	// Validate flags
+	if *lambdaFlag == "" && *stackFlag == "" {
+		fmt.Fprintln(os.Stderr, "Error: Either --lambda or --stack must be specified")
+		fmt.Fprintln(os.Stderr, "Usage: clambda delete --lambda <function-name>")
+		fmt.Fprintln(os.Stderr, "       clambda delete --stack <stack-name>")
 		os.Exit(1)
 	}
 
-	functionName := args[0]
+	if *lambdaFlag != "" && *stackFlag != "" {
+		fmt.Fprintln(os.Stderr, "Error: Cannot specify both --lambda and --stack")
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 	awsClient, err := client.NewAWSClient(ctx, *regionFlag, *profileFlag)
@@ -145,23 +192,49 @@ func handleDelete(region, profile *string) {
 		os.Exit(1)
 	}
 
-	functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
-	logGroupRepo := repository.NewLogGroupRepository(awsClient.Logs)
-	deleteUseCase := usecase.NewDeleteFunctionUseCase(functionRepo, logGroupRepo)
+	// Delete logs by default (unless --without-logs is specified)
+	deleteLogs := !*withoutLogs
 
-	input := &usecase.DeleteFunctionInput{
-		FunctionName: functionName,
-		DetachVPC:    *detachVPC,
-		DisableIPv6:  *disableIPv6,
-		DeleteLogs:   *withLogs,
+	if *lambdaFlag != "" {
+		// Delete a single function
+		functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
+		logGroupRepo := repository.NewLogGroupRepository(awsClient.Logs)
+		deleteUseCase := usecase.NewDeleteFunctionUseCase(functionRepo, logGroupRepo)
+
+		input := &usecase.DeleteFunctionInput{
+			FunctionName: *lambdaFlag,
+			DetachVPC:    true,
+			DisableIPv6:  true,
+			DeleteLogs:   deleteLogs,
+		}
+
+		if err := deleteUseCase.Execute(ctx, input); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to delete function: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully deleted function %s\n", *lambdaFlag)
+	} else {
+		// Delete all functions in a stack
+		functionRepo := repository.NewFunctionRepository(awsClient.Lambda)
+		logGroupRepo := repository.NewLogGroupRepository(awsClient.Logs)
+		stackRepo := repository.NewStackRepository(awsClient.CloudFormation)
+		deleteStackUseCase := usecase.NewDeleteStackFunctionsUseCase(functionRepo, logGroupRepo, stackRepo)
+
+		input := &usecase.DeleteStackFunctionsInput{
+			StackName:   *stackFlag,
+			DetachVPC:   true,
+			DisableIPv6: true,
+			DeleteLogs:  deleteLogs,
+		}
+
+		if err := deleteStackUseCase.Execute(ctx, input); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to delete stack functions: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully deleted all functions in stack %s\n", *stackFlag)
 	}
-
-	if err := deleteUseCase.Execute(ctx, input); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to delete function: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Successfully deleted function %s\n", functionName)
 }
 
 func handleDeleteLogs(region, profile *string) {
@@ -205,7 +278,7 @@ Usage:
 
 Commands:
   list                 List all Lambda functions with VPC status
-  detach-vpc           Detach VPC from a Lambda function
+  detach               Detach VPC from a Lambda function
   delete               Delete a Lambda function
   delete-logs          Delete a CloudWatch Logs log group
   help                 Show this help message
@@ -215,14 +288,26 @@ Global Options:
   --profile string     AWS profile (optional, uses default or AWS_PROFILE env var)
 
 Examples:
-  # List all Lambda functions
+  # List all Lambda functions in the account and region
   clambda list
 
-  # Detach VPC from a function
-  clambda detach-vpc --disable-ipv6=true my-function
+  # List Lambda functions in a specific CloudFormation stack
+  clambda list --stack my-stack
 
-  # Delete a function with VPC detachment and log cleanup
-  clambda delete --detach-vpc --disable-ipv6 --with-logs my-function
+  # Detach VPC from a single Lambda function
+  clambda detach --lambda my-function
+
+  # Detach VPC from all Lambda functions in a CloudFormation stack
+  clambda detach --stack my-stack
+
+  # Delete a Lambda function and its log group (VPC will be automatically detached if attached)
+  clambda delete --lambda my-function
+
+  # Delete a Lambda function without deleting its log group
+  clambda delete --lambda my-function --without-logs
+
+  # Delete all Lambda functions in a CloudFormation stack (including log groups)
+  clambda delete --stack my-stack
 
   # Delete CloudWatch Logs log group
   clambda delete-logs /aws/lambda/my-function

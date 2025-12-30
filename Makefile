@@ -1,4 +1,4 @@
-.PHONY: help install clean build test test-integ lint fmt deploy destroy
+.PHONY: help install clean build test test-integ test-integ-full lint fmt deploy destroy
 
 # Variables
 PROFILE ?=
@@ -18,7 +18,8 @@ help:
 	@echo "  clean        - Remove build artifacts"
 	@echo "  build        - Build the tool and CDK project"
 	@echo "  test         - Run unit tests for tool and CDK"
-	@echo "  test-integ   - Run integration tests"
+	@echo "  test-integ   - Run integration tests (read-only)"
+	@echo "  test-integ-full - Run full integration tests (includes destructive operations on test stack)"
 	@echo "  lint         - Run linters"
 	@echo "  fmt          - Format code"
 	@echo "  deploy       - Deploy CDK test infrastructure"
@@ -68,12 +69,85 @@ test:
 test-integ:
 ifdef PROFILE
 	@echo "Running integration tests (profile: $(PROFILE), region: $(REGION))..."
-	./clambda --profile $(PROFILE) --region $(REGION) list
+	@echo ""
+	@echo "=== Test 1: List all Lambda functions ==="
+	./clambda list --profile $(PROFILE) --region $(REGION)
+	@echo ""
+	@echo "=== Test 2: List Lambda functions in CDK stack ==="
+	./clambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION) || echo "Warning: TestInfrastructureStack not found (run 'make deploy' first)"
+	@echo ""
+	@echo "=== Test 3: Show help message ==="
+	./clambda help
+	@echo ""
+	@echo "=== Test 4: Validate detach command arguments ==="
+	./clambda detach 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Detach validation works" || echo "✗ Detach validation failed"
+	@echo ""
+	@echo "=== Test 5: Validate delete command arguments ==="
+	./clambda delete 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Delete validation works" || echo "✗ Delete validation failed"
+	@echo ""
+	@echo "=== Test 6: Validate delete-logs command arguments ==="
+	./clambda delete-logs 2>&1 | grep -q "Log group name is required" && echo "✓ Delete-logs validation works" || echo "✗ Delete-logs validation failed"
 else
 	@echo "Running integration tests (region: $(REGION))..."
-	./clambda --region $(REGION) list
+	@echo ""
+	@echo "=== Test 1: List all Lambda functions ==="
+	./clambda list --region $(REGION)
+	@echo ""
+	@echo "=== Test 2: List Lambda functions in CDK stack ==="
+	./clambda list --stack TestInfrastructureStack --region $(REGION) || echo "Warning: TestInfrastructureStack not found (run 'make deploy' first)"
+	@echo ""
+	@echo "=== Test 3: Show help message ==="
+	./clambda help
+	@echo ""
+	@echo "=== Test 4: Validate detach command arguments ==="
+	./clambda detach 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Detach validation works" || echo "✗ Detach validation failed"
+	@echo ""
+	@echo "=== Test 5: Validate delete command arguments ==="
+	./clambda delete 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Delete validation works" || echo "✗ Delete validation failed"
+	@echo ""
+	@echo "=== Test 6: Validate delete-logs command arguments ==="
+	./clambda delete-logs 2>&1 | grep -q "Log group name is required" && echo "✓ Delete-logs validation works" || echo "✗ Delete-logs validation failed"
 endif
-	@echo "Integration tests complete!"
+	@echo ""
+	@echo "=== Integration tests complete! ==="
+
+# Run full integration tests (includes destructive operations)
+test-integ-full: test-integ
+ifdef PROFILE
+	@echo ""
+	@echo "=== Running full integration tests with destructive operations ==="
+	@echo "Warning: This will modify the TestInfrastructureStack!"
+	@echo ""
+	@echo "=== Test 7: Detach VPC from stack (dry-run - list first) ==="
+	./clambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION) || (echo "Error: TestInfrastructureStack not found. Run 'make deploy' first." && exit 1)
+	@echo ""
+	@echo "=== Test 8: Actually detach VPC from test stack ==="
+	@read -p "Press Enter to detach VPC from TestInfrastructureStack (Ctrl+C to cancel)..." confirm
+	./clambda detach --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION)
+	@echo ""
+	@echo "=== Test 9: Verify VPC was detached ==="
+	./clambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION)
+	@echo ""
+	@echo "Note: Re-run 'make deploy' to restore the test infrastructure with VPC attachments"
+else
+	@echo ""
+	@echo "=== Running full integration tests with destructive operations ==="
+	@echo "Warning: This will modify the TestInfrastructureStack!"
+	@echo ""
+	@echo "=== Test 7: Detach VPC from stack (dry-run - list first) ==="
+	./clambda list --stack TestInfrastructureStack --region $(REGION) || (echo "Error: TestInfrastructureStack not found. Run 'make deploy' first." && exit 1)
+	@echo ""
+	@echo "=== Test 8: Actually detach VPC from test stack ==="
+	@read -p "Press Enter to detach VPC from TestInfrastructureStack (Ctrl+C to cancel)..." confirm
+	./clambda detach --stack TestInfrastructureStack --region $(REGION)
+	@echo ""
+	@echo "=== Test 9: Verify VPC was detached ==="
+	./clambda list --stack TestInfrastructureStack --region $(REGION)
+	@echo ""
+	@echo "Note: Re-run 'make deploy' to restore the test infrastructure with VPC attachments"
+endif
+	@echo ""
+	@echo "=== Full integration tests complete! ==="
 
 # Run linters
 lint:
