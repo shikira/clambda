@@ -4,7 +4,6 @@
 *.dll
 *.so
 *.dylib
-clambda
 
 # Test binary, built with `go test -c`
 *.test
@@ -38,3 +37,5 @@ cdk/*.js
 cdk/*/*.js.map
 cdk/*/*.d.ts
 cdk/*/*.cdk.staging/
+# Added by goreleaser init:
+dist/
