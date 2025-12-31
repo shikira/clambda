@@ -42,4 +42,4 @@ cdk/*/*.cdk.staging/
 dist/
 
 # Build artifacts
-/clambda
+/delambda

@@ -7,8 +7,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
-	"github.com/shirasu/clambda/internal/domain/loggroup"
-	logspkg "github.com/shirasu/clambda/internal/logs"
+	"github.com/shirasu/delambda/internal/domain/loggroup"
+	logspkg "github.com/shirasu/delambda/internal/logs"
 )
 
 // LogGroupRepository implements the loggroup.Repository interface

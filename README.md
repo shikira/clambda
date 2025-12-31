@@ -1,4 +1,4 @@
-# clambda
+# delambda
 
 A powerful CLI tool to safely delete AWS Lambda functions with VPC attachments.
 
@@ -10,7 +10,7 @@ Deleting VPC-attached Lambda functions can be extremely time-consuming due to:
 2. **VPC detachment delays** - Detaching VPCs from Lambda functions is a slow operation
 3. **Log group persistence** - CloudWatch Logs groups remain after function deletion, causing recreation failures
 
-`clambda` solves these problems by providing a streamlined, automated workflow for Lambda function deletion.
+`delambda` solves these problems by providing a streamlined, automated workflow for Lambda function deletion.
 
 ## Performance
 
@@ -22,13 +22,13 @@ Performance comparison when deleting a CloudFormation stack containing VPC-attac
 
 | Method | Stack Deletion Time | Performance Improvement |
 |--------|---------------------|------------------------|
-| **Without `clambda`** (Direct stack deletion) | 21 minutes 51 seconds | Baseline |
-| **With `clambda`** (VPC detach → Stack deletion) | 1 minute 51 seconds | **92% faster** (20 minutes saved) |
+| **Without `delambda`** (Direct stack deletion) | 21 minutes 51 seconds | Baseline |
+| **With `delambda`** (VPC detach → Stack deletion) | 1 minute 51 seconds | **92% faster** (20 minutes saved) |
 
 **Test command:**
 ```bash
 # Pre-detach VPCs from all Lambda functions in the stack
-clambda detach --stack my-stack
+delambda detach --stack my-stack
 
 # Then delete the CloudFormation stack
 aws cloudformation delete-stack --stack-name my-stack
@@ -47,10 +47,10 @@ For Linux and macOS:
 
 ```bash
 # Install the latest version
-curl -sSfL https://raw.githubusercontent.com/shikira/clambda/main/install.sh | bash
+curl -sSfL https://raw.githubusercontent.com/shikira/delambda/main/install.sh | bash
 
 # Install a specific version
-curl -sSfL https://raw.githubusercontent.com/shikira/clambda/main/install.sh | bash -s v1.0.0
+curl -sSfL https://raw.githubusercontent.com/shikira/delambda/main/install.sh | bash -s v1.0.0
 ```
 
 ### Using Go install
@@ -58,12 +58,12 @@ curl -sSfL https://raw.githubusercontent.com/shikira/clambda/main/install.sh | b
 Requires Go 1.25 or later:
 
 ```bash
-go install github.com/shirasu/clambda/cmd/clambda@latest
+go install github.com/shirasu/delambda/cmd/delambda@latest
 ```
 
 ### Download binary manually
 
-Download the appropriate binary for your platform from the [releases page](https://github.com/shikira/clambda/releases) and add it to your PATH.
+Download the appropriate binary for your platform from the [releases page](https://github.com/shikira/delambda/releases) and add it to your PATH.
 
 ## Features
 
@@ -82,36 +82,36 @@ Download the appropriate binary for your platform from the [releases page](https
 
 ```bash
 # List all Lambda functions in the account and region
-clambda list
+delambda list
 
 # List Lambda functions in a specific CloudFormation stack
-clambda list --stack my-stack
+delambda list --stack my-stack
 ```
 
 ### Delete Lambda functions
 
 ```bash
 # Delete a Lambda function and its log group (VPC will be automatically detached if attached)
-clambda delete --lambda my-function
+delambda delete --lambda my-function
 
 # Delete a Lambda function without deleting its log group
-clambda delete --lambda my-function --without-logs
+delambda delete --lambda my-function --without-logs
 
 # Delete all Lambda functions in a CloudFormation stack (including log groups)
-clambda delete --stack my-stack
+delambda delete --stack my-stack
 
 # Delete all Lambda functions in a stack without deleting log groups
-clambda delete --stack my-stack --without-logs
+delambda delete --stack my-stack --without-logs
 ```
 
 ### Detach VPC from Lambda functions
 
 ```bash
 # Detach VPC from a single Lambda function
-clambda detach --lambda my-function
+delambda detach --lambda my-function
 
 # Detach VPC from all Lambda functions in a CloudFormation stack
-clambda detach --stack my-stack
+delambda detach --stack my-stack
 ```
 
 ## Configuration
@@ -120,17 +120,17 @@ clambda detach --stack my-stack
 
 ```bash
 # Using flags
-clambda list --region us-west-2 --profile dev
+delambda list --region us-west-2 --profile dev
 
 # Using environment variables
 export AWS_REGION=us-west-2
 export AWS_PROFILE=dev
-clambda list
+delambda list
 ```
 
 ### Proxy Support
 
-`clambda` automatically respects standard HTTP proxy environment variables:
+`delambda` automatically respects standard HTTP proxy environment variables:
 - `HTTP_PROXY` / `http_proxy`
 - `HTTPS_PROXY` / `https_proxy`
 - `NO_PROXY` / `no_proxy`

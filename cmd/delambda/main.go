@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/shirasu/clambda/internal/application/usecase"
-	"github.com/shirasu/clambda/internal/domain/function"
-	"github.com/shirasu/clambda/internal/infrastructure/repository"
-	"github.com/shirasu/clambda/pkg/client"
+	"github.com/shirasu/delambda/internal/application/usecase"
+	"github.com/shirasu/delambda/internal/domain/function"
+	"github.com/shirasu/delambda/internal/infrastructure/repository"
+	"github.com/shirasu/delambda/pkg/client"
 )
 
 func main() {
@@ -110,8 +110,8 @@ func handleDetach(region, profile *string) {
 	// Validate flags
 	if *lambdaFlag == "" && *stackFlag == "" {
 		fmt.Fprintln(os.Stderr, "Error: Either --lambda or --stack must be specified")
-		fmt.Fprintln(os.Stderr, "Usage: clambda detach --lambda <function-name>")
-		fmt.Fprintln(os.Stderr, "       clambda detach --stack <stack-name>")
+		fmt.Fprintln(os.Stderr, "Usage: delambda detach --lambda <function-name>")
+		fmt.Fprintln(os.Stderr, "       delambda detach --stack <stack-name>")
 		os.Exit(1)
 	}
 
@@ -175,8 +175,8 @@ func handleDelete(region, profile *string) {
 	// Validate flags
 	if *lambdaFlag == "" && *stackFlag == "" {
 		fmt.Fprintln(os.Stderr, "Error: Either --lambda or --stack must be specified")
-		fmt.Fprintln(os.Stderr, "Usage: clambda delete --lambda <function-name>")
-		fmt.Fprintln(os.Stderr, "       clambda delete --stack <stack-name>")
+		fmt.Fprintln(os.Stderr, "Usage: delambda delete --lambda <function-name>")
+		fmt.Fprintln(os.Stderr, "       delambda delete --stack <stack-name>")
 		os.Exit(1)
 	}
 
@@ -246,7 +246,7 @@ func handleDeleteLogs(region, profile *string) {
 	args := fs.Args()
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "Log group name is required")
-		fmt.Fprintln(os.Stderr, "Usage: clambda delete-logs <log-group-name>")
+		fmt.Fprintln(os.Stderr, "Usage: delambda delete-logs <log-group-name>")
 		os.Exit(1)
 	}
 
@@ -271,10 +271,10 @@ func handleDeleteLogs(region, profile *string) {
 }
 
 func printUsage() {
-	usage := `clambda - A powerful CLI tool to safely delete AWS Lambda functions with VPC attachments
+	usage := `delambda - A powerful CLI tool to safely delete AWS Lambda functions with VPC attachments
 
 Usage:
-  clambda <command> [options]
+  delambda <command> [options]
 
 Commands:
   list                 List all Lambda functions with VPC status
@@ -289,28 +289,28 @@ Global Options:
 
 Examples:
   # List all Lambda functions in the account and region
-  clambda list
+  delambda list
 
   # List Lambda functions in a specific CloudFormation stack
-  clambda list --stack my-stack
+  delambda list --stack my-stack
 
   # Detach VPC from a single Lambda function
-  clambda detach --lambda my-function
+  delambda detach --lambda my-function
 
   # Detach VPC from all Lambda functions in a CloudFormation stack
-  clambda detach --stack my-stack
+  delambda detach --stack my-stack
 
   # Delete a Lambda function and its log group (VPC will be automatically detached if attached)
-  clambda delete --lambda my-function
+  delambda delete --lambda my-function
 
   # Delete a Lambda function without deleting its log group
-  clambda delete --lambda my-function --without-logs
+  delambda delete --lambda my-function --without-logs
 
   # Delete all Lambda functions in a CloudFormation stack (including log groups)
-  clambda delete --stack my-stack
+  delambda delete --stack my-stack
 
   # Delete CloudWatch Logs log group
-  clambda delete-logs /aws/lambda/my-function
+  delambda delete-logs /aws/lambda/my-function
 `
 	fmt.Print(usage)
 }

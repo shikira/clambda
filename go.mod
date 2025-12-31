@@ -1,4 +1,4 @@
-module github.com/shirasu/clambda
+module github.com/shirasu/delambda
 
 go 1.25.5
 

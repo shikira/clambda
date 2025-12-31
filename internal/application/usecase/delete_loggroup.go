@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/shirasu/clambda/internal/domain/loggroup"
+	"github.com/shirasu/delambda/internal/domain/loggroup"
 )
 
 // DeleteLogGroupUseCase handles deleting log groups

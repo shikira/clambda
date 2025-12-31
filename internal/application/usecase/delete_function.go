@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shirasu/clambda/internal/domain/function"
-	"github.com/shirasu/clambda/internal/domain/loggroup"
+	"github.com/shirasu/delambda/internal/domain/function"
+	"github.com/shirasu/delambda/internal/domain/loggroup"
 )
 
 // DeleteFunctionUseCase handles the deletion of Lambda functions

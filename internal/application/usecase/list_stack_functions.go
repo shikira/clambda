@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shirasu/clambda/internal/domain/function"
-	"github.com/shirasu/clambda/internal/domain/stack"
+	"github.com/shirasu/delambda/internal/domain/function"
+	"github.com/shirasu/delambda/internal/domain/stack"
 )
 
 // ListStackFunctionsUseCase handles listing Lambda functions in a CloudFormation stack

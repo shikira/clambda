@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# This script automates the installation of the clambda tool.
+# This script automates the installation of the delambda tool.
 # It checks for the specified version (or fetches the latest one),
 # downloads the binary, and installs it on the system.
 
 set -e
 
 # Check for required tools: curl and tar.
-# These tools are necessary for downloading and extracting the clambda binary.
+# These tools are necessary for downloading and extracting the delambda binary.
 if ! command -v curl &> /dev/null; then
     echo "curl could not be found"
     exit 1
@@ -18,10 +18,10 @@ if ! command -v tar &> /dev/null; then
     exit 1
 fi
 
-# Determine the version of clambda to install.
+# Determine the version of delambda to install.
 # If no version is specified as a command line argument, fetch the latest version.
 if [ -z "$1" ]; then
-    VERSION=$(curl -s https://api.github.com/repos/shikira/clambda/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    VERSION=$(curl -s https://api.github.com/repos/shikira/delambda/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
     if [ -z "$VERSION" ]; then
         echo "Failed to fetch the latest version"
         exit 1
@@ -53,36 +53,36 @@ case $OS in
     *) echo "Unsupported OS: $OS"; exit 1 ;;
 esac
 
-# Construct the download URL for the clambda binary based on the version, OS, and architecture.
-FILE_NAME="clambda_${VERSION}_${OS}_${ARCH}.tar.gz"
+# Construct the download URL for the delambda binary based on the version, OS, and architecture.
+FILE_NAME="delambda_${VERSION}_${OS}_${ARCH}.tar.gz"
 if [ "$OS" = "Windows" ]; then
-    FILE_NAME="clambda_${VERSION}_${OS}_${ARCH}.zip"
+    FILE_NAME="delambda_${VERSION}_${OS}_${ARCH}.zip"
 fi
 
-URL="https://github.com/shikira/clambda/releases/download/v${VERSION}/${FILE_NAME}"
+URL="https://github.com/shikira/delambda/releases/download/v${VERSION}/${FILE_NAME}"
 
-# Download the clambda binary.
-echo "Downloading clambda version ${VERSION} for ${OS}/${ARCH}..."
+# Download the delambda binary.
+echo "Downloading delambda version ${VERSION} for ${OS}/${ARCH}..."
 if ! curl -L -o "$FILE_NAME" "$URL"; then
-    echo "Failed to download clambda"
+    echo "Failed to download delambda"
     exit 1
 fi
 
-# Install clambda.
+# Install delambda.
 # This involves extracting the binary and moving it to /usr/local/bin.
-echo "Installing clambda..."
+echo "Installing delambda..."
 if [ "$OS" = "Windows" ]; then
     if ! command -v unzip &> /dev/null; then
         echo "unzip could not be found"
         exit 1
     fi
     if ! unzip -o "$FILE_NAME"; then
-        echo "Failed to extract clambda"
+        echo "Failed to extract delambda"
         exit 1
     fi
 else
     if ! tar -xzf "$FILE_NAME"; then
-        echo "Failed to extract clambda"
+        echo "Failed to extract delambda"
         exit 1
     fi
 fi
@@ -90,20 +90,20 @@ fi
 # Move binary to /usr/local/bin (or a Windows-appropriate location)
 if [ "$OS" = "Windows" ]; then
     # For Windows, just inform the user to add it to PATH manually
-    echo "clambda.exe extracted successfully."
-    echo "Please add the current directory to your PATH or move clambda.exe to a directory in your PATH."
+    echo "delambda.exe extracted successfully."
+    echo "Please add the current directory to your PATH or move delambda.exe to a directory in your PATH."
 else
-    if ! sudo mv clambda /usr/local/bin/clambda; then
-        echo "Failed to install clambda to /usr/local/bin"
+    if ! sudo mv delambda /usr/local/bin/delambda; then
+        echo "Failed to install delambda to /usr/local/bin"
         echo "You may need to run this script with appropriate permissions or manually move the binary."
         exit 1
     fi
     # Make sure it's executable
-    sudo chmod +x /usr/local/bin/clambda
+    sudo chmod +x /usr/local/bin/delambda
 fi
 
 # Clean up by removing the downloaded archive file.
 rm "$FILE_NAME"
 
-echo "clambda installation complete."
-echo "Run 'clambda --help' to see how to use clambda."
+echo "delambda installation complete."
+echo "Run 'delambda --help' to see how to use delambda."

@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/shirasu/clambda/internal/domain/function"
-	lambdapkg "github.com/shirasu/clambda/internal/lambda"
+	"github.com/shirasu/delambda/internal/domain/function"
+	lambdapkg "github.com/shirasu/delambda/internal/lambda"
 )
 
 // FunctionRepository implements the function.Repository interface

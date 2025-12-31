@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shirasu/clambda/internal/domain/function"
-	"github.com/shirasu/clambda/internal/domain/loggroup"
-	"github.com/shirasu/clambda/internal/domain/stack"
+	"github.com/shirasu/delambda/internal/domain/function"
+	"github.com/shirasu/delambda/internal/domain/loggroup"
+	"github.com/shirasu/delambda/internal/domain/stack"
 )
 
 // DeleteStackFunctionsUseCase handles deleting all Lambda functions in a stack

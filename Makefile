@@ -40,7 +40,7 @@ install:
 # Remove build artifacts
 clean:
 	@echo "Cleaning Go build artifacts..."
-	rm -f clambda
+	rm -f delambda
 	rm -f coverage.out coverage.html
 	rm -f *.test
 	@echo "Cleaning CDK build artifacts..."
@@ -51,8 +51,8 @@ clean:
 
 # Build the tool and CDK project
 build:
-	@echo "Building clambda tool..."
-	go build -o clambda ./cmd/clambda
+	@echo "Building delambda tool..."
+	go build -o delambda ./cmd/delambda
 	@echo "Building CDK project..."
 	cd cdk && pnpm run build
 	@echo "Build complete!"
@@ -71,42 +71,42 @@ ifdef PROFILE
 	@echo "Running integration tests (profile: $(PROFILE), region: $(REGION))..."
 	@echo ""
 	@echo "=== Test 1: List all Lambda functions ==="
-	./clambda list --profile $(PROFILE) --region $(REGION)
+	./delambda list --profile $(PROFILE) --region $(REGION)
 	@echo ""
 	@echo "=== Test 2: List Lambda functions in CDK stack ==="
-	./clambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION) || echo "Warning: TestInfrastructureStack not found (run 'make deploy' first)"
+	./delambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION) || echo "Warning: TestInfrastructureStack not found (run 'make deploy' first)"
 	@echo ""
 	@echo "=== Test 3: Show help message ==="
-	./clambda help
+	./delambda help
 	@echo ""
 	@echo "=== Test 4: Validate detach command arguments ==="
-	./clambda detach 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Detach validation works" || echo "✗ Detach validation failed"
+	./delambda detach 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Detach validation works" || echo "✗ Detach validation failed"
 	@echo ""
 	@echo "=== Test 5: Validate delete command arguments ==="
-	./clambda delete 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Delete validation works" || echo "✗ Delete validation failed"
+	./delambda delete 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Delete validation works" || echo "✗ Delete validation failed"
 	@echo ""
 	@echo "=== Test 6: Validate delete-logs command arguments ==="
-	./clambda delete-logs 2>&1 | grep -q "Log group name is required" && echo "✓ Delete-logs validation works" || echo "✗ Delete-logs validation failed"
+	./delambda delete-logs 2>&1 | grep -q "Log group name is required" && echo "✓ Delete-logs validation works" || echo "✗ Delete-logs validation failed"
 else
 	@echo "Running integration tests (region: $(REGION))..."
 	@echo ""
 	@echo "=== Test 1: List all Lambda functions ==="
-	./clambda list --region $(REGION)
+	./delambda list --region $(REGION)
 	@echo ""
 	@echo "=== Test 2: List Lambda functions in CDK stack ==="
-	./clambda list --stack TestInfrastructureStack --region $(REGION) || echo "Warning: TestInfrastructureStack not found (run 'make deploy' first)"
+	./delambda list --stack TestInfrastructureStack --region $(REGION) || echo "Warning: TestInfrastructureStack not found (run 'make deploy' first)"
 	@echo ""
 	@echo "=== Test 3: Show help message ==="
-	./clambda help
+	./delambda help
 	@echo ""
 	@echo "=== Test 4: Validate detach command arguments ==="
-	./clambda detach 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Detach validation works" || echo "✗ Detach validation failed"
+	./delambda detach 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Detach validation works" || echo "✗ Detach validation failed"
 	@echo ""
 	@echo "=== Test 5: Validate delete command arguments ==="
-	./clambda delete 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Delete validation works" || echo "✗ Delete validation failed"
+	./delambda delete 2>&1 | grep -q "Either --lambda or --stack must be specified" && echo "✓ Delete validation works" || echo "✗ Delete validation failed"
 	@echo ""
 	@echo "=== Test 6: Validate delete-logs command arguments ==="
-	./clambda delete-logs 2>&1 | grep -q "Log group name is required" && echo "✓ Delete-logs validation works" || echo "✗ Delete-logs validation failed"
+	./delambda delete-logs 2>&1 | grep -q "Log group name is required" && echo "✓ Delete-logs validation works" || echo "✗ Delete-logs validation failed"
 endif
 	@echo ""
 	@echo "=== Integration tests complete! ==="
@@ -119,14 +119,14 @@ ifdef PROFILE
 	@echo "Warning: This will modify the TestInfrastructureStack!"
 	@echo ""
 	@echo "=== Test 7: Detach VPC from stack (dry-run - list first) ==="
-	./clambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION) || (echo "Error: TestInfrastructureStack not found. Run 'make deploy' first." && exit 1)
+	./delambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION) || (echo "Error: TestInfrastructureStack not found. Run 'make deploy' first." && exit 1)
 	@echo ""
 	@echo "=== Test 8: Actually detach VPC from test stack ==="
 	@read -p "Press Enter to detach VPC from TestInfrastructureStack (Ctrl+C to cancel)..." confirm
-	./clambda detach --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION)
+	./delambda detach --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION)
 	@echo ""
 	@echo "=== Test 9: Verify VPC was detached ==="
-	./clambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION)
+	./delambda list --stack TestInfrastructureStack --profile $(PROFILE) --region $(REGION)
 	@echo ""
 	@echo "Note: Re-run 'make deploy' to restore the test infrastructure with VPC attachments"
 else
@@ -135,14 +135,14 @@ else
 	@echo "Warning: This will modify the TestInfrastructureStack!"
 	@echo ""
 	@echo "=== Test 7: Detach VPC from stack (dry-run - list first) ==="
-	./clambda list --stack TestInfrastructureStack --region $(REGION) || (echo "Error: TestInfrastructureStack not found. Run 'make deploy' first." && exit 1)
+	./delambda list --stack TestInfrastructureStack --region $(REGION) || (echo "Error: TestInfrastructureStack not found. Run 'make deploy' first." && exit 1)
 	@echo ""
 	@echo "=== Test 8: Actually detach VPC from test stack ==="
 	@read -p "Press Enter to detach VPC from TestInfrastructureStack (Ctrl+C to cancel)..." confirm
-	./clambda detach --stack TestInfrastructureStack --region $(REGION)
+	./delambda detach --stack TestInfrastructureStack --region $(REGION)
 	@echo ""
 	@echo "=== Test 9: Verify VPC was detached ==="
-	./clambda list --stack TestInfrastructureStack --region $(REGION)
+	./delambda list --stack TestInfrastructureStack --region $(REGION)
 	@echo ""
 	@echo "Note: Re-run 'make deploy' to restore the test infrastructure with VPC attachments"
 endif
